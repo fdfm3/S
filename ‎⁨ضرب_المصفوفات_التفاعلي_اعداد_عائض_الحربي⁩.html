@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ضرب المصفوفات التفاعلي | إعداد: عائض الحربي</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Cairo & Tajawal -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#16a34a',
+                            600: '#15803d',
+                            700: '#166534',
+                            900: '#14532d',
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+
+        /* Matrix Container LTR layout & Bracket Visuals */
+        .matrix-wrapper {
+            direction: ltr !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .matrix-brackets {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            direction: ltr !important;
+        }
+        .matrix-brackets::before, .matrix-brackets::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            border: 3px solid #334155;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .matrix-brackets::before {
+            left: 0;
+            border-right: none;
+        }
+        .matrix-brackets::after {
+            right: 0;
+            border-left: none;
+        }
+
+        /* Highlight classes for Step Visualizer */
+        .highlight-row {
+            background-color: #fef08a !important;
+            border-color: #ca8a04 !important;
+            color: #854d0e !important;
+            transform: scale(1.05);
+            font-weight: bold;
+        }
+        .highlight-col {
+            background-color: #bfdbfe !important;
+            border-color: #2563eb !important;
+            color: #1e40af !important;
+            transform: scale(1.05);
+            font-weight: bold;
+        }
+        .highlight-target {
+            background-color: #bbf7d0 !important;
+            border-color: #16a34a !important;
+            color: #14532d !important;
+            transform: scale(1.1);
+            font-weight: bold;
+            box-shadow: 0 0 12px rgba(22, 163, 74, 0.4);
+        }
+
+        /* LTR Equation display */
+        .ltr-math {
+            direction: ltr !important;
+            unicode-bidi: embed;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased flex flex-col min-h-screen">
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-slate-900 via-emerald-900 to-teal-900 text-white shadow-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 text-emerald-300">
+                    <i class="fa-solid fa-table-cells text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ضرب المصفوفات التفاعلي</h1>
+                    <p class="text-sm text-emerald-300/90 font-medium mt-0.5">إعداد: عائض الحربي</p>
+                </div>
+            </div>
+            
+            <!-- Mathematical Condition Badge LTR -->
+            <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15 text-xs sm:text-sm flex items-center gap-3">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-bold">شرط الضرب (LTR):</span>
+                <span class="ltr-math text-amber-300 font-bold">A<sub>m×r</sub> · B<sub>r×n</sub> = C<sub>m×n</sub></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- Navigation Tabs (3 Main Tabs) -->
+        <div class="flex flex-wrap gap-3 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+            <!-- Icon 1: Interactive Solved Example -->
+            <button onclick="switchTab('demo')" id="tab-demo" class="tab-btn active flex-1 min-w-[200px] py-3.5 px-5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-md">
+                <i class="fa-solid fa-chalkboard-user text-lg"></i>
+                <span>أمثلة مشروحة بالخطوات</span>
+            </button>
+
+            <!-- Icon 2: Custom Interactive Calculator -->
+            <button onclick="switchTab('calc')" id="tab-calc" class="tab-btn flex-1 min-w-[200px] py-3.5 px-5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-calculator text-lg"></i>
+                <span>الحاسبة التفاعلية</span>
+            </button>
+
+            <!-- Icon 3: Practice Generator & Problem Solver -->
+            <button onclick="switchTab('generator')" id="tab-generator" class="tab-btn flex-1 min-w-[200px] py-3.5 px-5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                <span>مولد التمارين والاختبار</span>
+            </button>
+        </div>
+
+        <!-- ================= TAB 1: INTERACTIVE SOLVED EXAMPLES ================= -->
+        <div id="content-demo" class="tab-content block space-y-6">
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                            <span>استعراض حالات ضرب المصفوفات (الممكنة وغير الممكنة)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">اختر إحدى الحالات أدناه للتعرف على طريقة الضرب خطوة بخطوة من اليسار إلى اليمين (LTR)</p>
+                    </div>
+                </div>
+
+                <!-- Case Selection Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                    <button onclick="loadDemoPreset('possible-square')" id="demo-btn-possible-square" class="demo-preset-btn p-3 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-500 text-emerald-900 rounded-xl text-xs font-bold transition text-right">
+                        <div class="flex items-center justify-between mb-1">
+                            <span>1. حالة ممكِنة (مربعة)</span>
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        </div>
+                        <span class="ltr-math text-[11px] text-emerald-700 block">A(2×2) · B(2×2)</span>
+                    </button>
+
+                    <button onclick="loadDemoPreset('possible-rect')" id="demo-btn-possible-rect" class="demo-preset-btn p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-right">
+                        <div class="flex items-center justify-between mb-1">
+                            <span>2. حالة ممكِنة (مستطيلة)</span>
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        </div>
+                        <span class="ltr-math text-[11px] text-slate-500 block">A(2×3) · B(3×2)</span>
+                    </button>
+
+                    <button onclick="loadDemoPreset('possible-rowcol')" id="demo-btn-possible-rowcol" class="demo-preset-btn p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-right">
+                        <div class="flex items-center justify-between mb-1">
+                            <span>3. صف × عمود</span>
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        </div>
+                        <span class="ltr-math text-[11px] text-slate-500 block">A(1×3) · B(3×1)</span>
+                    </button>
+
+                    <button onclick="loadDemoPreset('impossible-1')" id="demo-btn-impossible-1" class="demo-preset-btn p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-right">
+                        <div class="flex items-center justify-between mb-1">
+                            <span>4. حالة غير ممكِنة</span>
+                            <i class="fa-solid fa-circle-xmark text-rose-600"></i>
+                        </div>
+                        <span class="ltr-math text-[11px] text-slate-500 block">A(2×3) · B(2×2)</span>
+                    </button>
+
+                    <button onclick="loadDemoPreset('impossible-2')" id="demo-btn-impossible-2" class="demo-preset-btn p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-right">
+                        <div class="flex items-center justify-between mb-1">
+                            <span>5. غير ممكِنة (رتب مختلفة)</span>
+                            <i class="fa-solid fa-circle-xmark text-rose-600"></i>
+                        </div>
+                        <span class="ltr-math text-[11px] text-slate-500 block">A(3×2) · B(3×2)</span>
+                    </button>
+                </div>
+
+                <!-- Display Box for Demo Preset -->
+                <div id="demo-display-area" class="space-y-6">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 2: INTERACTIVE CALCULATOR ================= -->
+        <div id="content-calc" class="tab-content hidden space-y-6">
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    
+                    <!-- Dimensions Config -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-emerald-600"></i>
+                            <span>تحديد رُتب المصفوفات (من اليسار لليمين LTR)</span>
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Matrix A Dim -->
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <label class="block text-xs font-bold text-slate-600 mb-2">المصفوفة الأولى A (صفوف × أعمدة)</label>
+                                <div class="flex items-center gap-2 ltr-math">
+                                    <select id="calc-a-rows" onchange="updateCalcDimensions()" class="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-center text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                                        <option value="1">1</option>
+                                        <option value="2" selected>2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                    <span class="text-slate-400 font-bold">×</span>
+                                    <select id="calc-a-cols" onchange="updateCalcDimensions()" class="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-center text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                                        <option value="1">1</option>
+                                        <option value="2" selected>2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Matrix B Dim -->
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <label class="block text-xs font-bold text-slate-600 mb-2">المصفوفة الثانية B (صفوف × أعمدة)</label>
+                                <div class="flex items-center gap-2 ltr-math">
+                                    <select id="calc-b-rows" onchange="updateCalcDimensions()" class="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-center text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                                        <option value="1">1</option>
+                                        <option value="2" selected>2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                    <span class="text-slate-400 font-bold">×</span>
+                                    <select id="calc-b-cols" onchange="updateCalcDimensions()" class="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-center text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                                        <option value="1">1</option>
+                                        <option value="2" selected>2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Possibility Card -->
+                    <div id="calc-status-card" class="p-5 rounded-2xl border transition-all duration-300 bg-emerald-50 border-emerald-300 text-emerald-900">
+                        <!-- Populated by JS -->
+                    </div>
+
+                </div>
+
+                <!-- Calculator Controls -->
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button onclick="runCalculatorMultiplication()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span>احسب ناتج الضرب A · B</span>
+                    </button>
+                    <button onclick="fillCalcRandomValues()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-2 border border-slate-200">
+                        <i class="fa-solid fa-dice"></i>
+                        <span>تعبئة أرقام عشوائية</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Matrices Input Grid (Strictly LTR: A * B) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i>
+                    <span>إدخال قيم العناصر للمصفوفتين A و B (الاتجاه LTR):</span>
+                </h4>
+
+                <div class="matrix-wrapper w-full py-4 gap-6 items-center justify-center min-w-[600px]">
+                    
+                    <!-- Matrix A Input Card -->
+                    <div class="flex flex-col items-center bg-amber-50/50 p-4 rounded-2xl border border-amber-200">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="font-bold text-amber-800 text-base">Matrix A</span>
+                            <span id="calc-badge-a" class="ltr-math text-xs font-bold text-amber-700 bg-amber-200/80 px-2 py-0.5 rounded">2 × 2</span>
+                        </div>
+                        <div class="matrix-brackets">
+                            <div id="calc-grid-a" class="grid gap-2 p-1">
+                                <!-- Rendered via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multiply Sign -->
+                    <div class="text-3xl font-extrabold text-slate-400 font-mono px-2">·</div>
+
+                    <!-- Matrix B Input Card -->
+                    <div class="flex flex-col items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-200">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="font-bold text-blue-800 text-base">Matrix B</span>
+                            <span id="calc-badge-b" class="ltr-math text-xs font-bold text-blue-700 bg-blue-200/80 px-2 py-0.5 rounded">2 × 2</span>
+                        </div>
+                        <div class="matrix-brackets">
+                            <div id="calc-grid-b" class="grid gap-2 p-1">
+                                <!-- Rendered via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Calculated Result & Interactive Step Visualizer -->
+            <div id="calc-result-section" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hidden space-y-6">
+                <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i>
+                            <span>خطوات الحساب التفاعلية لخطوة بخطوة</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">تنقل بين الخطوات لاكتشاف كيفية ضرب عناصر الصف والعمود بالترتيب</p>
+                    </div>
+
+                    <!-- Step Navigator -->
+                    <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                        <button onclick="calcPrevStep()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-xs shadow-sm transition">
+                            <i class="fa-solid fa-chevron-right ml-1"></i> السابق
+                        </button>
+                        <span id="calc-step-counter" class="text-xs font-bold text-slate-700 px-3 ltr-math">Step 1 / 4</span>
+                        <button onclick="calcNextStep()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-xs shadow-sm transition">
+                            التالي <i class="fa-solid fa-chevron-left mr-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Calculation Step Detail Box -->
+                    <div class="lg:col-span-7 bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span id="calc-step-cell-title" class="bg-emerald-600 text-white font-bold text-xs px-3 py-1 rounded-full ltr-math">Element C(1,1)</span>
+                            <span class="text-xs text-slate-500 font-bold">ضرب الصف من A في العمود من B</span>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-inner space-y-3 font-mono ltr-math">
+                            <div id="calc-step-math-expr" class="text-slate-700 font-semibold text-sm sm:text-base leading-relaxed">
+                                <!-- Expression string -->
+                            </div>
+                            <div id="calc-step-math-res" class="text-emerald-700 font-extrabold text-base sm:text-lg border-t border-slate-100 pt-2">
+                                <!-- Result -->
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-600 bg-amber-50 p-3 rounded-lg border border-amber-200/70 flex items-start gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-500 text-sm mt-0.5"></i>
+                            <span>تذكر: نضرب عناصر الصف الأول للمصفوفة A بالعناصر المناظرة لها في العمود الأول للمصفوفة B ثم نجمع النواتج.</span>
+                        </p>
+                    </div>
+
+                    <!-- Calculated Matrix C -->
+                    <div class="lg:col-span-5 flex flex-col items-center justify-center border-t lg:border-t-0 lg:border-r border-slate-100 pt-6 lg:pt-0">
+                        <h4 class="text-sm font-bold text-slate-700 mb-3">المصفوفة الناتجة C = A · B</h4>
+                        <div class="matrix-brackets">
+                            <div id="calc-grid-c" class="grid gap-3 p-2 ltr-math">
+                                <!-- Matrix Result cells -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 3: PRACTICE GENERATOR & QUIZ ================= -->
+        <div id="content-generator" class="tab-content hidden space-y-6">
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-purple-600"></i>
+                            <span>مولد التمارين واختبار ناتج الضرب التفاعلي</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">احسب ناتج ضرب المصفوفتين وأدخل النتائج في الخانات، وسيقوم النظام بتصحيح إجاباتك فوراً مع شرح الخطأ إن وجد!</p>
+                    </div>
+
+                    <!-- Score & Control Bar -->
+                    <div class="flex items-center gap-3">
+                        <div class="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-emerald-900 font-bold text-xs sm:text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-amber-500"></i>
+                            <span>النقاط: <strong id="gen-score" class="text-emerald-700 font-extrabold text-base">0</strong></span>
+                        </div>
+                        <button onclick="generateNewExercise()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>سؤال جديد</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generated Exercise Area -->
+                <div id="gen-exercise-card" class="space-y-6">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p>ضرب المصفوفات التفاعلي - الرياضيات (ثاني ثانوي)</p>
+            <p class="text-emerald-400 font-bold">إعداد: عائض الحربي © 2026</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Global State
+        let currentTab = 'demo';
+        
+        // Tab 1 (Demo) State
+        let currentDemoStepIndex = 0;
+        let demoSteps = [];
+
+        // Tab 2 (Calculator) State
+        let calcStepIndex = 0;
+        let calcSteps = [];
+        let calcMatrixA = [];
+        let calcMatrixB = [];
+
+        // Tab 3 (Generator) State
+        let currentGenProblem = null;
+        let genScore = 0;
+
+        // Switch Tabs Logic
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-md', 'active');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            const selectedBtn = document.getElementById(`tab-${tabId}`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md', 'active');
+                selectedBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+            }
+
+            const targetContent = document.getElementById(`content-${tabId}`);
+            if (targetContent) targetContent.classList.remove('hidden');
+
+            if (tabId === 'demo') {
+                loadDemoPreset('possible-square');
+            } else if (tabId === 'calc') {
+                updateCalcDimensions();
+                fillCalcRandomValues();
+            } else if (tabId === 'generator') {
+                if (!currentGenProblem) generateNewExercise();
+            }
+        }
+
+        // Helper Matrix Operations (LTR standard)
+        function multiplyMatrices(A, B) {
+            const rowsA = A.length;
+            const colsA = A[0].length;
+            const rowsB = B.length;
+            const colsB = B[0].length;
+
+            if (colsA !== rowsB) return null;
+
+            const C = [];
+            const steps = [];
+
+            for (let i = 0; i < rowsA; i++) {
+                C[i] = [];
+                for (let j = 0; j < colsB; j++) {
+                    let sum = 0;
+                    const terms = [];
+                    for (let k = 0; k < colsA; k++) {
+                        const valA = A[i][k];
+                        const valB = B[k][j];
+                        const prod = valA * valB;
+                        sum += prod;
+                        terms.push({ valA, valB, prod, k });
+                    }
+                    C[i][j] = sum;
+                    steps.push({
+                        rowIdx: i,
+                        colIdx: j,
+                        terms: terms,
+                        finalVal: sum
+                    });
+                }
+            }
+            return { C, steps };
+        }
+
+        // ================= TAB 1: DEMO PRESETS & VISUALIZER =================
+        function loadDemoPreset(presetKey) {
+            document.querySelectorAll('.demo-preset-btn').forEach(b => {
+                b.classList.remove('bg-emerald-50', 'border-2', 'border-emerald-500', 'text-emerald-900');
+                b.classList.add('bg-slate-50', 'border', 'border-slate-200', 'text-slate-700');
+            });
+
+            const selBtn = document.getElementById(`demo-btn-${presetKey}`);
+            if (selBtn) {
+                selBtn.classList.remove('bg-slate-50', 'border', 'border-slate-200', 'text-slate-700');
+                selBtn.classList.add('bg-emerald-50', 'border-2', 'border-emerald-500', 'text-emerald-900');
+            }
+
+            let preset = {};
+
+            if (presetKey === 'possible-square') {
+                preset = {
+                    title: "1. ضرب مصفوفات مربعة A(2×2) · B(2×2)",
+                    isPossible: true,
+                    matA: [[3, -1], [4, 2]],
+                    matB: [[5, 2], [-3, 1]],
+                    explanation: "عملية الضرب مُمكِنة لأن عدد أعمدة A يساوي (2) وعدد صفوف B يساوي (2). النتيجة مصفوفة C برتبة (2×2)."
+                };
+            } else if (presetKey === 'possible-rect') {
+                preset = {
+                    title: "2. ضرب مصفوفات مستطيلة A(2×3) · B(3×2)",
+                    isPossible: true,
+                    matA: [[1, 4, -2], [3, 0, 5]],
+                    matB: [[2, -1], [3, 4], [0, 2]],
+                    explanation: "عملية الضرب مُمكِنة لأن عدد أعمدة A يساوي (3) وعدد صفوف B يساوي (3). النتيجة مصفوفة C برتبة (2×2)."
+                };
+            } else if (presetKey === 'possible-rowcol') {
+                preset = {
+                    title: "3. ضرب مصفوفة صف في عمود A(1×3) · B(3×1)",
+                    isPossible: true,
+                    matA: [[2, -4, 5]],
+                    matB: [[3], [1], [-2]],
+                    explanation: "عملية الضرب مُمكِنة وتنتج عنصر واحد فقط رتبته C(1×1)."
+                };
+            } else if (presetKey === 'impossible-1') {
+                preset = {
+                    title: "4. حالة غير ممكِنة: A(2×3) · B(2×2)",
+                    isPossible: false,
+                    matA: [[1, 2, 3], [4, 5, 6]],
+                    matB: [[7, 8], [9, 10]],
+                    explanation: "عملية الضرب غير ممكِنة لعدم إمكانية مطابقة العناصر! عدد أعمدة المصفوفة الأولى A هو (3)، بينما عدد صفوف المصفوفة الثانية B هو (2)."
+                };
+            } else if (presetKey === 'impossible-2') {
+                preset = {
+                    title: "5. غير ممكِنة: A(3×2) · B(3×2)",
+                    isPossible: false,
+                    matA: [[2, 1], [0, -3], [4, 5]],
+                    matB: [[1, 2], [3, 4], [5, 6]],
+                    explanation: "عملية الضرب غير ممكِنة نهائياً لأن أعمدة الأولى A = (2) لا تساوي صفوف الثانية B = (3)."
+                };
+            }
+
+            renderDemoDisplay(preset);
+        }
+
+        function renderDemoDisplay(preset) {
+            const container = document.getElementById('demo-display-area');
+
+            if (!preset.isPossible) {
+                container.innerHTML = `
+                    <div class="p-5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 space-y-4">
+                        <div class="flex items-center gap-3 border-b border-rose-200 pb-3">
+                            <i class="fa-solid fa-circle-xmark text-2xl text-rose-600"></i>
+                            <div>
+                                <h4 class="font-extrabold text-base">${preset.title}</h4>
+                                <span class="text-xs font-bold bg-rose-200 text-rose-900 px-2.5 py-0.5 rounded mt-1 inline-block">حالة ضرب غَيْر مُمكِنة (غير معرفة) ❌</span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm font-semibold leading-relaxed">${preset.explanation}</p>
+
+                        <!-- Matrices Display (LTR) -->
+                        <div class="matrix-wrapper w-full justify-center gap-6 py-4">
+                            <div class="flex flex-col items-center">
+                                <span class="ltr-math text-xs font-bold text-slate-500 mb-2">A (${preset.matA.length} × ${preset.matA[0].length})</span>
+                                <div class="matrix-brackets">
+                                    <div class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${preset.matA[0].length}, minmax(0, 1fr));">
+                                        ${preset.matA.map(row => row.map(v => `<div class="w-10 h-10 border rounded-lg bg-white flex items-center justify-center font-bold text-slate-800">${v}</div>`).join('')).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span class="text-2xl font-bold text-rose-400 font-mono">×</span>
+
+                            <div class="flex flex-col items-center">
+                                <span class="ltr-math text-xs font-bold text-slate-500 mb-2">B (${preset.matB.length} × ${preset.matB[0].length})</span>
+                                <div class="matrix-brackets">
+                                    <div class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${preset.matB[0].length}, minmax(0, 1fr));">
+                                        ${preset.matB.map(row => row.map(v => `<div class="w-10 h-10 border rounded-lg bg-white flex items-center justify-center font-bold text-slate-800">${v}</div>`).join('')).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // If possible, prepare interactive steps
+            const res = multiplyMatrices(preset.matA, preset.matB);
+            demoSteps = res.steps;
+            currentDemoStepIndex = 0;
+
+            const rowsA = preset.matA.length;
+            const colsA = preset.matA[0].length;
+            const rowsB = preset.matB.length;
+            const colsB = preset.matB[0].length;
+
+            container.innerHTML = `
+                <div class="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 text-emerald-900 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-emerald-200/80 pb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-circle-check text-2xl text-emerald-600"></i>
+                            <div>
+                                <h4 class="font-extrabold text-base text-slate-800">${preset.title}</h4>
+                                <span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded mt-1 inline-block">عملية الضرب مُمكِنة ✅</span>
+                            </div>
+                        </div>
+
+                        <!-- Demo Navigation Controls -->
+                        <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-emerald-200 shadow-sm">
+                            <button onclick="prevDemoStep()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-xs transition">
+                                <i class="fa-solid fa-chevron-right ml-1"></i> السابق
+                            </button>
+                            <span id="demo-step-counter" class="text-xs font-bold text-slate-700 px-2 ltr-math">Step 1 / ${demoSteps.length}</span>
+                            <button onclick="nextDemoStep()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-xs transition">
+                                التالي <i class="fa-solid fa-chevron-left mr-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-600 font-medium">${preset.explanation}</p>
+
+                    <!-- Interactive Equation Layout (A * B = C) LTR -->
+                    <div class="matrix-wrapper w-full justify-center gap-4 sm:gap-6 py-4 overflow-x-auto">
+                        <!-- Matrix A -->
+                        <div class="flex flex-col items-center">
+                            <span class="ltr-math text-xs font-bold text-amber-800 mb-1">Matrix A (${rowsA}×${colsA})</span>
+                            <div class="matrix-brackets">
+                                <div id="demo-grid-a" class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${colsA}, minmax(0, 1fr));">
+                                    ${preset.matA.map((row, r) => row.map((v, c) => `
+                                        <div id="demo-cell-a-${r}-${c}" class="w-10 h-10 sm:w-11 sm:h-11 border-2 border-slate-200 bg-white rounded-lg flex items-center justify-center font-bold text-slate-800 text-sm transition-all duration-300">
+                                            ${v}
+                                        </div>
+                                    `).join('')).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <span class="text-2xl font-bold text-slate-400 font-mono">·</span>
+
+                        <!-- Matrix B -->
+                        <div class="flex flex-col items-center">
+                            <span class="ltr-math text-xs font-bold text-blue-800 mb-1">Matrix B (${rowsB}×${colsB})</span>
+                            <div class="matrix-brackets">
+                                <div id="demo-grid-b" class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${colsB}, minmax(0, 1fr));">
+                                    ${preset.matB.map((row, r) => row.map((v, c) => `
+                                        <div id="demo-cell-b-${r}-${c}" class="w-10 h-10 sm:w-11 sm:h-11 border-2 border-slate-200 bg-white rounded-lg flex items-center justify-center font-bold text-slate-800 text-sm transition-all duration-300">
+                                            ${v}
+                                        </div>
+                                    `).join('')).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <span class="text-2xl font-bold text-slate-400 font-mono">=</span>
+
+                        <!-- Result Matrix C -->
+                        <div class="flex flex-col items-center">
+                            <span class="ltr-math text-xs font-bold text-emerald-800 mb-1">Result C (${rowsA}×${colsB})</span>
+                            <div class="matrix-brackets">
+                                <div id="demo-grid-c" class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${colsB}, minmax(0, 1fr));">
+                                    ${res.C.map((row, r) => row.map((v, c) => `
+                                        <div id="demo-cell-c-${r}-${c}" onclick="jumpDemoStep(${r}, ${c})" class="w-11 h-11 sm:w-12 sm:h-12 border-2 border-emerald-300 bg-white rounded-xl flex items-center justify-center font-extrabold text-emerald-900 text-base cursor-pointer hover:border-emerald-500 transition-all duration-300">
+                                            ${v}
+                                        </div>
+                                    `).join('')).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step Detailed Math Explanation Box -->
+                    <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-inner space-y-2 font-mono ltr-math">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span id="demo-step-title" class="text-xs font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-full">Element C(1,1)</span>
+                            <span class="text-[11px] text-slate-400 font-sans">انقر على أي عنصر في مصفوفة الناتج للانتقال إليه</span>
+                        </div>
+                        <div id="demo-step-expr" class="text-slate-800 font-bold text-sm sm:text-base pt-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div id="demo-step-result" class="text-emerald-700 font-extrabold text-base sm:text-lg">
+                            <!-- Result -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            renderDemoStep();
+        }
+
+        function renderDemoStep() {
+            if (!demoSteps || demoSteps.length === 0) return;
+
+            const step = demoSteps[currentDemoStepIndex];
+
+            // Reset classes
+            document.querySelectorAll('[id^="demo-cell-a-"]').forEach(el => el.className = "w-10 h-10 sm:w-11 sm:h-11 border-2 border-slate-200 bg-white rounded-lg flex items-center justify-center font-bold text-slate-800 text-sm transition-all duration-300");
+            document.querySelectorAll('[id^="demo-cell-b-"]').forEach(el => el.className = "w-10 h-10 sm:w-11 sm:h-11 border-2 border-slate-200 bg-white rounded-lg flex items-center justify-center font-bold text-slate-800 text-sm transition-all duration-300");
+            document.querySelectorAll('[id^="demo-cell-c-"]').forEach(el => el.className = "w-11 h-11 sm:w-12 sm:h-12 border-2 border-emerald-300 bg-white rounded-xl flex items-center justify-center font-extrabold text-emerald-900 text-base cursor-pointer hover:border-emerald-500 transition-all duration-300");
+
+            // Highlight Row in A
+            step.terms.forEach(t => {
+                const elA = document.getElementById(`demo-cell-a-${step.rowIdx}-${t.k}`);
+                if (elA) elA.className += " highlight-row";
+            });
+
+            // Highlight Col in B
+            step.terms.forEach(t => {
+                const elB = document.getElementById(`demo-cell-b-${t.k}-${step.colIdx}`);
+                if (elB) elB.className += " highlight-col";
+            });
+
+            // Highlight Cell in C
+            const elC = document.getElementById(`demo-cell-c-${step.rowIdx}-${step.colIdx}`);
+            if (elC) elC.className += " highlight-target";
+
+            // Update UI Labels
+            document.getElementById('demo-step-counter').innerText = `Step ${currentDemoStepIndex + 1} / ${demoSteps.length}`;
+            document.getElementById('demo-step-title').innerText = `Calculating Element C(${step.rowIdx + 1}, ${step.colIdx + 1})`;
+
+            const exprStr = step.terms.map(t => `(${t.valA} × ${t.valB})`).join(' + ');
+            const prodStr = step.terms.map(t => `${t.prod}`).join(' + ');
+
+            document.getElementById('demo-step-expr').innerHTML = `
+                <div><span class="text-slate-400 font-normal">Formula:</span> Row ${step.rowIdx + 1} · Col ${step.colIdx + 1} = ${exprStr}</div>
+                <div class="text-xs text-slate-500 font-normal mt-1">Products: ${prodStr}</div>
+            `;
+            document.getElementById('demo-step-result').innerText = `Value = ${step.finalVal}`;
+        }
+
+        function nextDemoStep() {
+            if (currentDemoStepIndex < demoSteps.length - 1) {
+                currentDemoStepIndex++;
+                renderDemoStep();
+            }
+        }
+
+        function prevDemoStep() {
+            if (currentDemoStepIndex > 0) {
+                currentDemoStepIndex--;
+                renderDemoStep();
+            }
+        }
+
+        function jumpDemoStep(r, c) {
+            const idx = demoSteps.findIndex(s => s.rowIdx === r && s.colIdx === c);
+            if (idx !== -1) {
+                currentDemoStepIndex = idx;
+                renderDemoStep();
+            }
+        }
+
+        // ================= TAB 2: INTERACTIVE CALCULATOR =================
+        function updateCalcDimensions() {
+            const rowsA = parseInt(document.getElementById('calc-a-rows').value);
+            const colsA = parseInt(document.getElementById('calc-a-cols').value);
+            const rowsB = parseInt(document.getElementById('calc-b-rows').value);
+            const colsB = parseInt(document.getElementById('calc-b-cols').value);
+
+            document.getElementById('calc-badge-a').innerText = `${rowsA} × ${colsA}`;
+            document.getElementById('calc-badge-b').innerText = `${rowsB} × ${colsB}`;
+
+            // Render Input Grid A
+            const gridA = document.getElementById('calc-grid-a');
+            gridA.style.gridTemplateColumns = `repeat(${colsA}, minmax(0, 1fr))`;
+            gridA.innerHTML = '';
+            for (let i = 0; i < rowsA; i++) {
+                for (let j = 0; j < colsA; j++) {
+                    const val = (calcMatrixA[i] && calcMatrixA[i][j] !== undefined) ? calcMatrixA[i][j] : Math.floor(Math.random() * 9) - 2;
+                    gridA.innerHTML += `
+                        <input type="number" id="calc-cell-a-${i}-${j}" value="${val}" 
+                            class="calc-cell-a w-12 sm:w-14 h-10 border-2 border-slate-200 rounded-lg text-center font-mono font-bold text-slate-800 focus:border-amber-500 focus:outline-none transition">
+                    `;
+                }
+            }
+
+            // Render Input Grid B
+            const gridB = document.getElementById('calc-grid-b');
+            gridB.style.gridTemplateColumns = `repeat(${colsB}, minmax(0, 1fr))`;
+            gridB.innerHTML = '';
+            for (let i = 0; i < rowsB; i++) {
+                for (let j = 0; j < colsB; j++) {
+                    const val = (calcMatrixB[i] && calcMatrixB[i][j] !== undefined) ? calcMatrixB[i][j] : Math.floor(Math.random() * 9) - 2;
+                    gridB.innerHTML += `
+                        <input type="number" id="calc-cell-b-${i}-${j}" value="${val}" 
+                            class="calc-cell-b w-12 sm:w-14 h-10 border-2 border-slate-200 rounded-lg text-center font-mono font-bold text-slate-800 focus:border-blue-500 focus:outline-none transition">
+                    `;
+                }
+            }
+
+            // Check multiplication condition: Cols(A) === Rows(B)
+            const statusCard = document.getElementById('calc-status-card');
+            const isPossible = (colsA === rowsB);
+
+            if (isPossible) {
+                statusCard.className = "p-5 rounded-2xl border transition-all duration-300 bg-emerald-50 border-emerald-300 text-emerald-900";
+                statusCard.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-2xl text-emerald-600 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-extrabold text-base text-emerald-900">عملية الضرب مُمكِنَة (مُعرَّفة) ✅</h4>
+                            <p class="text-xs text-emerald-700 mt-1">
+                                لأن عدد أعمدة الأولى A <span class="font-mono font-bold bg-emerald-200/70 px-1.5 py-0.5 rounded">(${colsA})</span> 
+                                يساوي عدد صفوف الثانية B <span class="font-mono font-bold bg-emerald-200/70 px-1.5 py-0.5 rounded">(${rowsB})</span>.
+                            </p>
+                            <div class="mt-2 text-xs font-bold text-emerald-800 ltr-math">
+                                رتبة المصفوفة الناتجة C ستكون: <span class="bg-emerald-200 px-2 py-0.5 rounded">${rowsA} × ${colsB}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusCard.className = "p-5 rounded-2xl border transition-all duration-300 bg-rose-50 border-rose-300 text-rose-900";
+                statusCard.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-2xl text-rose-600 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-extrabold text-base text-rose-900">عملية الضرب غَيْر مُمكِنَة (غير مُعرَّفة) ❌</h4>
+                            <p class="text-xs text-rose-700 mt-1">
+                                لأن عدد أعمدة الأولى A <span class="font-mono font-bold bg-rose-200/70 px-1.5 py-0.5 rounded">(${colsA})</span> 
+                                <strong>لا يساوي</strong> عدد صفوف الثانية B <span class="font-mono font-bold bg-rose-200/70 px-1.5 py-0.5 rounded">(${rowsB})</span>.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('calc-result-section').classList.add('hidden');
+        }
+
+        function fillCalcRandomValues() {
+            const rowsA = parseInt(document.getElementById('calc-a-rows').value);
+            const colsA = parseInt(document.getElementById('calc-a-cols').value);
+            const rowsB = parseInt(document.getElementById('calc-b-rows').value);
+            const colsB = parseInt(document.getElementById('calc-b-cols').value);
+
+            for (let i = 0; i < rowsA; i++) {
+                for (let j = 0; j < colsA; j++) {
+                    document.getElementById(`calc-cell-a-${i}-${j}`).value = Math.floor(Math.random() * 15) - 7;
+                }
+            }
+            for (let i = 0; i < rowsB; i++) {
+                for (let j = 0; j < colsB; j++) {
+                    document.getElementById(`calc-cell-b-${i}-${j}`).value = Math.floor(Math.random() * 15) - 7;
+                }
+            }
+            runCalculatorMultiplication();
+        }
+
+        function runCalculatorMultiplication() {
+            const rowsA = parseInt(document.getElementById('calc-a-rows').value);
+            const colsA = parseInt(document.getElementById('calc-a-cols').value);
+            const rowsB = parseInt(document.getElementById('calc-b-rows').value);
+            const colsB = parseInt(document.getElementById('calc-b-cols').value);
+
+            if (colsA !== rowsB) {
+                return;
+            }
+
+            calcMatrixA = [];
+            for (let i = 0; i < rowsA; i++) {
+                calcMatrixA[i] = [];
+                for (let j = 0; j < colsA; j++) {
+                    calcMatrixA[i][j] = parseFloat(document.getElementById(`calc-cell-a-${i}-${j}`).value) || 0;
+                }
+            }
+
+            calcMatrixB = [];
+            for (let i = 0; i < rowsB; i++) {
+                calcMatrixB[i] = [];
+                for (let j = 0; j < colsB; j++) {
+                    calcMatrixB[i][j] = parseFloat(document.getElementById(`calc-cell-b-${i}-${j}`).value) || 0;
+                }
+            }
+
+            const res = multiplyMatrices(calcMatrixA, calcMatrixB);
+            calcSteps = res.steps;
+
+            // Render Result Grid C
+            const gridC = document.getElementById('calc-grid-c');
+            gridC.style.gridTemplateColumns = `repeat(${colsB}, minmax(0, 1fr))`;
+            gridC.innerHTML = '';
+            for (let i = 0; i < rowsA; i++) {
+                for (let j = 0; j < colsB; j++) {
+                    gridC.innerHTML += `
+                        <div id="calc-cell-c-${i}-${j}" onclick="jumpCalcStep(${i}, ${j})" 
+                            class="w-14 h-12 border-2 border-emerald-300 bg-emerald-50 rounded-xl flex items-center justify-center font-mono font-bold text-slate-800 text-base cursor-pointer hover:border-emerald-500 transition">
+                            ${res.C[i][j]}
+                        </div>
+                    `;
+                }
+            }
+
+            document.getElementById('calc-result-section').classList.remove('hidden');
+            calcStepIndex = 0;
+            renderCalcStep();
+        }
+
+        function renderCalcStep() {
+            if (!calcSteps || calcSteps.length === 0) return;
+
+            const step = calcSteps[calcStepIndex];
+
+            // Reset classes
+            document.querySelectorAll('.calc-cell-a').forEach(el => el.classList.remove('highlight-row'));
+            document.querySelectorAll('.calc-cell-b').forEach(el => el.classList.remove('highlight-col'));
+            document.querySelectorAll('[id^="calc-cell-c-"]').forEach(el => el.classList.remove('highlight-target'));
+
+            // Highlight Row in A
+            step.terms.forEach(t => {
+                const elA = document.getElementById(`calc-cell-a-${step.rowIdx}-${t.k}`);
+                if (elA) elA.classList.add('highlight-row');
+            });
+
+            // Highlight Col in B
+            step.terms.forEach(t => {
+                const elB = document.getElementById(`calc-cell-b-${t.k}-${step.colIdx}`);
+                if (elB) elB.classList.add('highlight-col');
+            });
+
+            // Highlight Target Cell in C
+            const elC = document.getElementById(`calc-cell-c-${step.rowIdx}-${step.colIdx}`);
+            if (elC) elC.classList.add('highlight-target');
+
+            // Update Header & Text
+            document.getElementById('calc-step-counter').innerText = `Step ${calcStepIndex + 1} / ${calcSteps.length}`;
+            document.getElementById('calc-step-cell-title').innerText = `Calculating Element C(${step.rowIdx + 1}, ${step.colIdx + 1})`;
+
+            const exprStr = step.terms.map(t => `(${t.valA} × ${t.valB})`).join(' + ');
+            const prodStr = step.terms.map(t => `${t.prod}`).join(' + ');
+
+            document.getElementById('calc-step-math-expr').innerHTML = `
+                <div><span class="text-slate-400 font-normal">Terms:</span> ${exprStr}</div>
+                <div class="text-xs text-slate-500 font-normal mt-1">Products: ${prodStr}</div>
+            `;
+            document.getElementById('calc-step-math-res').innerText = `Result = ${step.finalVal}`;
+        }
+
+        function calcNextStep() {
+            if (calcStepIndex < calcSteps.length - 1) {
+                calcStepIndex++;
+                renderCalcStep();
+            }
+        }
+
+        function calcPrevStep() {
+            if (calcStepIndex > 0) {
+                calcStepIndex--;
+                renderCalcStep();
+            }
+        }
+
+        function jumpCalcStep(r, c) {
+            const idx = calcSteps.findIndex(s => s.rowIdx === r && s.colIdx === c);
+            if (idx !== -1) {
+                calcStepIndex = idx;
+                renderCalcStep();
+            }
+        }
+
+        // ================= TAB 3: PRACTICE GENERATOR & CHECKER =================
+        function generateNewExercise() {
+            const isPossible = Math.random() > 0.25; // 75% possible questions to practice matrix multiplication
+            const rA = Math.floor(Math.random() * 2) + 1; // 1 or 2
+            const cA = Math.floor(Math.random() * 2) + 2; // 2 or 3
+            const rB = isPossible ? cA : (cA === 2 ? 3 : 2);
+            const cB = Math.floor(Math.random() * 2) + 1; // 1 or 2
+
+            const makeMat = (r, c) => Array.from({length: r}, () => Array.from({length: c}, () => Math.floor(Math.random() * 11) - 5));
+
+            const matA = makeMat(rA, cA);
+            const matB = makeMat(rB, cB);
+            const res = isPossible ? multiplyMatrices(matA, matB) : null;
+
+            currentGenProblem = {
+                isPossible,
+                matA,
+                matB,
+                resC: res ? res.C : null,
+                steps: res ? res.steps : [],
+                rA, cA, rB, cB,
+                userChecked: false
+            };
+
+            renderGenExerciseCard();
+        }
+
+        function renderGenExerciseCard() {
+            const card = document.getElementById('gen-exercise-card');
+            const p = currentGenProblem;
+
+            card.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Matrices Problem Display (LTR) -->
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center justify-between">
+                            <span>السؤال: أوجد ناتج عملية الضرب التالية أو حَدِّد ما إذا كانت غير ممكِنة:</span>
+                            <span class="ltr-math text-xs bg-slate-200 font-mono font-bold px-2 py-1 rounded text-slate-700">A(${p.rA}×${p.cA}) · B(${p.rB}×${p.cB})</span>
+                        </h4>
+
+                        <div class="matrix-wrapper w-full justify-center gap-4 sm:gap-6 py-2 overflow-x-auto">
+                            <!-- Matrix A -->
+                            <div class="flex flex-col items-center">
+                                <span class="ltr-math text-xs font-bold text-amber-800 mb-1">Matrix A</span>
+                                <div class="matrix-brackets">
+                                    <div class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${p.cA}, minmax(0, 1fr));">
+                                        ${p.matA.map(row => row.map(v => `<div class="w-11 h-11 border rounded-xl bg-white flex items-center justify-center font-bold text-slate-800 text-base shadow-sm">${v}</div>`).join('')).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span class="text-2xl font-bold text-slate-400 font-mono">·</span>
+
+                            <!-- Matrix B -->
+                            <div class="flex flex-col items-center">
+                                <span class="ltr-math text-xs font-bold text-blue-800 mb-1">Matrix B</span>
+                                <div class="matrix-brackets">
+                                    <div class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${p.cB}, minmax(0, 1fr));">
+                                        ${p.matB.map(row => row.map(v => `<div class="w-11 h-11 border rounded-xl bg-white flex items-center justify-center font-bold text-slate-800 text-base shadow-sm">${v}</div>`).join('')).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span class="text-2xl font-bold text-slate-400 font-mono">=</span>
+
+                            <!-- Result Input / Answer Area -->
+                            <div class="flex flex-col items-center">
+                                <span class="ltr-math text-xs font-bold text-emerald-800 mb-1">Result C</span>
+                                ${p.isPossible ? `
+                                    <div class="matrix-brackets">
+                                        <div class="grid gap-2 ltr-math" style="grid-template-columns: repeat(${p.cB}, minmax(0, 1fr));">
+                                            ${p.resC.map((row, r) => row.map((_, c) => `
+                                                <input type="number" id="gen-input-${r}-${c}" placeholder="c${r+1}${c+1}"
+                                                    class="w-12 h-12 border-2 border-emerald-300 rounded-xl text-center font-mono font-bold text-slate-800 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none transition text-base">
+                                            `).join('')).join('')}
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="p-3 bg-rose-100 border border-rose-300 rounded-xl text-rose-800 font-bold text-xs text-center">
+                                        غير ممكِنة
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Answer Option Selector / Actions -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-bold text-slate-700">تحديد حالة الضرب:</span>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                                <input type="radio" name="gen-possibility" value="possible" checked class="text-emerald-600 focus:ring-emerald-500">
+                                <span>الضرب مُمكِن</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                                <input type="radio" name="gen-possibility" value="impossible" class="text-rose-600 focus:ring-rose-500">
+                                <span>الضرب غَيْر مُمكِن</span>
+                            </label>
+                        </div>
+
+                        <button onclick="checkGenExerciseAnswer()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i>
+                            <span>التحقق من الإجابة</span>
+                        </button>
+                    </div>
+
+                    <!-- Feedback & Explanation Box -->
+                    <div id="gen-feedback-box" class="hidden p-5 rounded-2xl border space-y-4">
+                        <!-- Rendered upon checking -->
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkGenExerciseAnswer() {
+            const p = currentGenProblem;
+            const chosenPossibility = document.querySelector('input[name="gen-possibility"]:checked').value;
+            const isChoicePossible = (chosenPossibility === 'possible');
+            const feedbackBox = document.getElementById('gen-feedback-box');
+            feedbackBox.classList.remove('hidden');
+
+            let isOverallCorrect = true;
+            let errorDetails = [];
+
+            // Case 1: If user said impossible but it was actually possible
+            if (!isChoicePossible && p.isPossible) {
+                isOverallCorrect = false;
+                errorDetails.push(`الضرب مُمكِن بالفعل لأن عدد أعمدة الاولى (${p.cA}) يساوي عدد صفوف الثانية (${p.rB}).`);
+            } 
+            // Case 2: If user said possible but it was actually impossible
+            else if (isChoicePossible && !p.isPossible) {
+                isOverallCorrect = false;
+                errorDetails.push(`الضرب غَيْر مُمكِن لأن عدد أعمدة الاولى (${p.cA}) لا يساوي عدد صفوف الثانية (${p.rB}).`);
+            } 
+            // Case 3: Both agree it's possible -> Check numerical values entered
+            else if (isChoicePossible && p.isPossible) {
+                for (let r = 0; r < p.resC.length; r++) {
+                    for (let c = 0; c < p.resC[0].length; c++) {
+                        const inputEl = document.getElementById(`gen-input-${r}-${c}`);
+                        const userVal = parseFloat(inputEl.value);
+                        const correctVal = p.resC[r][c];
+
+                        if (isNaN(userVal) || userVal !== correctVal) {
+                            isOverallCorrect = false;
+                            inputEl.classList.remove('border-emerald-300', 'bg-emerald-50');
+                            inputEl.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+
+                            // Find step details
+                            const stp = p.steps.find(s => s.rowIdx === r && s.colIdx === c);
+                            const termsStr = stp.terms.map(t => `(${t.valA} × ${t.valB})`).join(' + ');
+
+                            errorDetails.push(`العنصر C(${r+1}, ${c+1}): القيمة الصحيحة هي <strong>${correctVal}</strong> ناتجة من: ${termsStr} = ${correctVal} (قمت بمدخل: ${isNaN(userVal) ? 'فارغ' : userVal}).`);
+                        } else {
+                            inputEl.classList.remove('border-emerald-300', 'border-rose-500', 'bg-rose-50');
+                            inputEl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-900');
+                        }
+                    }
+                }
+            }
+
+            // Render Feedback Card
+            if (isOverallCorrect) {
+                genScore += 10;
+                document.getElementById('gen-score').innerText = genScore;
+
+                feedbackBox.className = "p-5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 space-y-3";
+                feedbackBox.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-circle-check text-2xl text-emerald-600"></i>
+                        <div>
+                            <h4 class="font-extrabold text-base">إجابة صحيحة ممتازة! 🎉 (+10 نقاط)</h4>
+                            <p class="text-xs text-emerald-800 mt-0.5">لقد قمت بحساب ناتج ضرب المصفوفات بدقة متناهية وفق الخطوات الرياضية الصحيحة.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                feedbackBox.className = "p-5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 space-y-3";
+                let errorsHTML = errorDetails.map(err => `<li class="ltr-math text-xs sm:text-sm font-semibold">${err}</li>`).join('');
+
+                feedbackBox.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-circle-xmark text-2xl text-rose-600 mt-0.5"></i>
+                        <div class="space-y-2 w-full">
+                            <h4 class="font-extrabold text-base text-rose-900">توجد أخطاء في الحساب! توضيح وتفسير الخطأ:</h4>
+                            <ul class="list-disc list-inside space-y-1.5 bg-white p-3 rounded-xl border border-rose-200">
+                                ${errorsHTML}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // On Page Load
+        window.onload = function() {
+            loadDemoPreset('possible-square');
+        };
+    </script>
+</body>
+</html>
